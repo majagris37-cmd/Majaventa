@@ -4,7 +4,7 @@ Catalogo moderno con:
 
 - Vista publica con filtros, favoritos y carrito.
 - Panel privado con login.
-- Persistencia local en `server/data/db.json`.
+- Persistencia real en PostgreSQL.
 - Analisis de imagen con OpenAI o fallback heuristico.
 - Checkout por WhatsApp con resumen automatico del pedido.
 
@@ -12,9 +12,10 @@ Catalogo moderno con:
 
 1. Instala Node.js 18 o superior.
 2. Copia `.env.example` como `.env`.
-3. Configura tu numero de WhatsApp en `VITE_WHATSAPP_NUMBER`.
-4. Configura `OPENAI_API_KEY` si quieres analisis real de imagen.
-5. Ejecuta:
+3. Configura `DATABASE_URL` con tu base PostgreSQL.
+4. Configura tu numero de WhatsApp en `VITE_WHATSAPP_NUMBER`.
+5. Configura `OPENAI_API_KEY` si quieres analisis real de imagen.
+6. Ejecuta:
 
 ```bash
 npm install
@@ -31,3 +32,4 @@ npm run dev
 - El backend corre en `http://localhost:4000`.
 - El frontend usa `VITE_API_URL`.
 - Si no configuras OpenAI, el sistema usa una sugerencia local basada en el nombre del archivo.
+- El backend crea automaticamente tablas y productos semilla cuando la base esta vacia.

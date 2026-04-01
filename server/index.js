@@ -6,7 +6,7 @@ import express from "express";
 import cors from "cors";
 import bcrypt from "bcryptjs";
 import jwt from "jsonwebtoken";
-import { db, initDb } from "./db.js";
+import { findUserByUsername, getProducts, initDb, productExists, saveProduct } from "./db.js";
 import { analyzeProductImage } from "./openai.js";
 
 const app = express();
@@ -25,13 +25,13 @@ app.get("/api/health", (_request, response) => {
 
 app.post("/api/auth/login", async (request, response) => {
   const { username, password } = request.body || {};
-  const user = db.data.users.find((entry) => entry.username === username);
+  const user = await findUserByUsername(username);
 
   if (!user) {
     return response.status(401).json({ error: "Usuario no encontrado." });
   }
 
-  const matches = await bcrypt.compare(password || "", user.passwordHash);
+  const matches = await bcrypt.compare(password || "", user.password_hash);
   if (!matches) {
     return response.status(401).json({ error: "Contrasena incorrecta." });
   }
@@ -43,37 +43,34 @@ app.post("/api/auth/login", async (request, response) => {
   response.json({ token });
 });
 
-app.get("/api/products", (_request, response) => {
+app.get("/api/products", async (_request, response) => {
   response.json({
-    products: db.data.products.filter((product) => product.active),
+    products: await getProducts({ activeOnly: true }),
   });
 });
 
-app.get("/api/admin/products", requireAuth, (_request, response) => {
-  response.json({ products: db.data.products });
+app.get("/api/admin/products", requireAuth, async (_request, response) => {
+  response.json({ products: await getProducts() });
 });
 
 app.post("/api/admin/products", requireAuth, async (request, response) => {
-  db.data.products.unshift(normalizeProduct(request.body));
-  await db.write();
+  await saveProduct(normalizeProduct(request.body));
   response.json({
-    products: db.data.products,
-    publicProducts: db.data.products.filter((product) => product.active),
+    products: await getProducts(),
+    publicProducts: await getProducts({ activeOnly: true }),
   });
 });
 
 app.put("/api/admin/products/:id", requireAuth, async (request, response) => {
-  const index = db.data.products.findIndex((product) => product.id === request.params.id);
-  if (index === -1) {
+  if (!(await productExists(request.params.id))) {
     return response.status(404).json({ error: "Producto no encontrado." });
   }
 
-  db.data.products[index] = normalizeProduct(request.body);
-  await db.write();
+  await saveProduct(normalizeProduct(request.body));
 
   response.json({
-    products: db.data.products,
-    publicProducts: db.data.products.filter((product) => product.active),
+    products: await getProducts(),
+    publicProducts: await getProducts({ activeOnly: true }),
   });
 });
 
